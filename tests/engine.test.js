@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {answer,selectTransactions,summarize,money} from '../dist/engine.js';
+test('amostra: gastos confirmados não incluem pendência nem transferência',()=>{const s=summarize(selectTransactions());assert.equal(s.spending,35440);assert.equal(s.outflow,55440);assert.equal(s.inflow,270000);assert.equal(s.pending,1250);assert.equal(s.categories[0][1],23250);});
+test('filtro por período e conta',()=>{const rows=selectTransactions({account:'credit',start:'2026-10-01',end:'2026-10-10'});assert.equal(rows.length,2);assert.equal(summarize(rows).spending,9750);});
+test('saldos separam dinheiro e dívida',()=>{const r=answer('qual meu saldo?');assert.match(r.text,/300,00/);assert.match(r.text,/5.430,00/);assert.equal(r.table.rows[2][2],'Não informado');});
+test('transações: cinco mais recentes e pendência identificada',()=>{const r=answer('últimas transações');assert.equal(r.table.rows.length,5);assert.equal(r.table.rows[0][4],'Pendente');});
+test('alimentação respeita período',()=>{assert.match(answer('gastei com alimentação',{start:'2026-10-01',end:'2026-10-16'}).text,/194,50/);});
+test('conjunto vazio, data invertida, pedido desconhecido e escrita',()=>{assert.match(answer('extrato',{start:'2030-01-01'}).text,/Não há/);assert.match(answer('saldo',{start:'2026-10-20',end:'2026-10-01'}).text,/data inicial/);assert.match(answer('bitcoin').text,/Não consigo/);assert.match(answer('transferir 20').text,/só consulta/);});
+test('moeda não converte USD em reais',()=>assert.equal(money(11000),'US$ 110,00'));
